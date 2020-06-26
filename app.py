@@ -27,6 +27,21 @@ def split_path(path):
 
 templates.env.filters["split_path"] = split_path
 
+# 判断配置文件是否存在,不存在就创建
+if os.path.exists(os.getcwd() + "/config.ini"):
+    config.read("./config.ini")
+else:
+    config["DEF"] = {
+        'port': 8080,
+        'basedir': os.getcwd(),
+        'secret_key': "dcx",
+        'uname': "dcx",
+        'upwd': "123"
+    }
+    with open('config.ini', 'w') as f:
+        config.write(f)
+context_path = config.get('DEF', 'context_path')
+
 
 class User(BaseModel):
     username: str = None
@@ -34,18 +49,19 @@ class User(BaseModel):
 
 
 @app.get('/')
+@app.get(context_path)
 def index_get(request: Request):
-    return RedirectResponse('/login')
+    return RedirectResponse(context_path + '/login')
 
 
-@app.get('/login')
+@app.get(context_path + '/login')
 def login_get(request: Request):
     if request.session.get('username'):
-        return RedirectResponse('/index')
+        return RedirectResponse(context_path + '/index')
     return templates.TemplateResponse('account.html', {"request": request})
 
 
-@app.post('/doLogin')
+@app.post(context_path + '/doLogin')
 def login_post(request: Request, user: User):
     print('username', user.username)
     print('password', user.password)
@@ -56,17 +72,17 @@ def login_post(request: Request, user: User):
         return {"code": 401, "error": "用户名或密码错误"}
 
 
-@app.route('/logout')
+@app.route(context_path + '/logout')
 def logout(request: Request):
     del request.session['username']
-    return RedirectResponse('/login')
+    return RedirectResponse(context_path + '/login')
 
 
-@app.get('/index')
-@app.get('/index/{path_uri:path}')
+@app.get(context_path + '/index')
+@app.get(context_path + '/index/{path_uri:path}')
 def index(request: Request, path_uri=''):
     if not request.session.get('username'):
-        return RedirectResponse('/login')
+        return RedirectResponse(context_path + '/login')
     base_dir = config.get('DEF', 'basedir')
     path_url2 = path_uri.replace('index', '/')
     real_path = os.path.join(base_dir, path_url2).replace('\\', '/')
@@ -74,21 +90,21 @@ def index(request: Request, path_uri=''):
         return templates.TemplateResponse('index.html', {"request": request, "error_info": "错误的路径..."})
     file_reader = DocumentReader(real_path)
     dirs, files = file_reader.analysis_dir()
-    data = {"request": request, "path": path_url2, "dirs": dirs, "files": files, "sfiles": [], "error_info": None}
+    data = {"request": request, "context_path": context_path, "path": path_url2, "dirs": dirs, "files": files, "sfiles": [], "error_info": None}
 
     return templates.TemplateResponse('index.html', data)
 
 
-@app.get('/search')
+@app.get(context_path + '/search')
 def index(request: Request, searchText: str):
     base_dir = config.get('DEF', 'basedir')
     file_reader = DocumentReader(base_dir)
     sfiles = file_reader.search_file(searchText, base_dir)
-    data = {"request": request, "path": "", "dirs": [], "files": [], "sfiles": sfiles, "error_info": None}
+    data = {"request": request, "context_path": context_path,  "path": "", "dirs": [], "files": [], "sfiles": sfiles, "error_info": None}
     return templates.TemplateResponse('index.html', data)
 
 
-@app.post('/upload')
+@app.post(context_path + '/upload')
 async def upload(upload_path: str = Form(...), upload_file: UploadFile = Form(...)):
     path = upload_path
     file_name = upload_file.filename
@@ -99,8 +115,8 @@ async def upload(upload_path: str = Form(...), upload_file: UploadFile = Form(..
     return {"code": 200, "info": "文件：%s 上传成功" % file_name}
 
 
-@app.get('/download/{filename}')
-@app.get('/download/{path:path}/{filename}')
+@app.get(context_path + '/download/{filename}')
+@app.get(context_path + '/download/{path:path}/{filename}')
 async def download(filename, path=None):
     if not path:
         real_path = config.get('DEF', 'basedir')
@@ -192,17 +208,4 @@ class DocumentReader:
 
 
 if __name__ == '__main__':
-    # 判断配置文件是否存在,不存在就创建
-    if os.path.exists(os.getcwd() + "/config.ini"):
-        config.read("./config.ini")
-    else:
-        config["DEF"] = {
-            'port': 8080,
-            'basedir': os.getcwd(),
-            'secret_key': "dcx",
-            'uname': "dcx",
-            'upwd': "123"
-        }
-        with open('config.ini', 'w') as f:
-            config.write(f)
-    u.run(app, host="127.0.0.1", port=int(config.get('DEF', 'port')))
+    u.run(app, host=config.get('DEF', 'host'), port=int(config.get('DEF', 'port')))

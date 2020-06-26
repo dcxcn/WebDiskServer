@@ -24,7 +24,7 @@
 
         <ul class="nav navbar-nav navbar-right">
             <li> <!-- 搜索框 -->
-                <form method="get" action="/search" class="navbar-form navbar-left" role="search">
+                <form method="get" action="{{ context_path + '/search' }}" class="navbar-form navbar-left" role="search">
                    <div class="form-group">
                         <input id="searchText" type="text" name="searchText" class="form-control" placeholder="搜索...">
                         <button id="btnSearch" type="submit" class="btn btn-default">搜索</button>
@@ -128,7 +128,7 @@
         var formData = new FormData($('#upload-form')[0]);
         formData.append("upload_path", upload_path);
         $.ajax({
-            url: '/upload',
+            url: '{{ context_path+"/upload" }}',
             dataType: 'json',
             type: 'POST',
             data: formData,

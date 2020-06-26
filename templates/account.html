@@ -19,12 +19,12 @@
                 var pwd = pwdInput.val();
                 $.ajax({
                     type:'POST',
-                    url: '/doLogin',
+                    url: './doLogin',
                     data: JSON.stringify({username: user,password: pwd }),
                     contentType: "application/json; charset=utf-8",
                     success: function (data) {
                         if (data['code'] == 200) {
-                            window.location = '/index'
+                            window.location = './index'
                         } else {
                             var error = data['error'];
                             $("#error").html(error);
