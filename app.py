@@ -14,7 +14,7 @@ config = configparser.ConfigParser()
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key='YOUR KEY')
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 templates = Jinja2Templates(directory="templates")
 
@@ -41,6 +41,7 @@ else:
     with open('config.ini', 'w') as f:
         config.write(f)
 context_path = config.get('DEF', 'context_path')
+app.mount(context_path+"/static", StaticFiles(directory="static"), name="static")
 
 
 class User(BaseModel):
